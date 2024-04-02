@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "trade": "npx hardhat run scripts/trade.ts",
+    "fork": "npx hardhat node --fork https://rpc.pulsechain.com --fork-block-number 18156443"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
+    "hardhat": "^2.17.1"
+  }
+}
