@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "trade": "npx hardhat run scripts/trade_2.ts",
+    "trade": "npx hardhat run scripts/trade_9mm.ts",
     "fork": "npx hardhat node --fork https://rpc.pulsechain.com --fork-block-number 18156443"
   },
   "devDependencies": {
