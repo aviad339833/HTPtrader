@@ -34,13 +34,16 @@ async function main() {
   );
 
   // ensure that everything has been set up correctly:
-  console.log('\n provider: ', provider)
-  console.log('\n signer: ', signer)
-  console.log('\n routerContract: ', routerContract)
+  console.log('\n Chain connection check')
+  console.log('- signer connected: ', signer._isSigner)
+  console.log('- signer address: ', signer.address)
+  console.log('- provider connected: ', signer.provider._isProvider)
+  console.log('- routerContract set up: ', routerContract.address)
+  console.log('\n Swap params for `multicall` method')
 
   // prepare data for tokens swap
   const deadline = (Date.now() / 1000 + 60 * 20).toFixed(0); // swap tx deadline in 20 mins after calling the function (same as on 9mm swap tool)
-  console.log("deadline: ", deadline);
+  console.log("- `deadline`: ", deadline);
 
   const tokenInEncoded = abiCoder
     .encode(["address"], [IN_TOKEN_ADDRESS])
@@ -81,17 +84,18 @@ async function main() {
       "0000000000000000000000000000000000000000000000000000000000000000",
   ];
 
-  console.log("data(bytes[]): ", swapDetailsinBytes);
+  console.log("- `data(bytes[])`: ", swapDetailsinBytes);
 
+  console.log("\n Execute the swap");
   // Execute the swap
   const txRes = await routerContract.multicall(deadline, swapDetailsinBytes, {
     gasLimit: 5000000,
     value: amountInConverted,
   });
 
-  console.log(`Transaction hash: ${txRes.hash}`);
+  console.log(`- Transaction hash: ${txRes.hash}`);
   await txRes.wait();
-  console.log("Transaction confirmed!");
+  console.log("\nTransaction confirmed!");
 }
 
 main().catch((error) => {
