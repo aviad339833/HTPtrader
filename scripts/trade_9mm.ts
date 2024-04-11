@@ -5,26 +5,26 @@ require("dotenv").config();
 
 async function main() {
   // constants
-  const walletPrivateKey = process.env.WALLET_PK_2!;
+  const walletPrivateKey = process.env.WALLET_PK_MASTER!;
   const RPC_URL = process.env.LIVE_RPC;
   const IN_TOKEN_ADDRESS = "0xA1077a294dDE1B09bB078844df40758a5D0f9a27"; // Address of WPLS token contract.
   const OUT_TOKEN_ADDRESS = "0x7c7ba94b60270bc2c7d98d3498b5ce85b870a749"; // Address of the HTP token
   const ROUTER_ADDRESS = process.env.ROUTER_ADDRESS!; // Ensure you have this in your .env for the router's contract address
 
-  const poolSlippageTolerance = 500n; // if needed, change according to the selected IN_TOKEN_ADDRESS and OUT_TOKEN_ADDRESS addresses. 
-  
+  const poolSlippageTolerance = 500n; // if needed, change according to the selected IN_TOKEN_ADDRESS and OUT_TOKEN_ADDRESS addresses.
+
   const tradeAmountPLS = 80; // Define the amount of PLS you want to swap.
 
   // convert tradeAmountPLS to BigNumber
-  const amountInConverted = ethers.utils.parseUnits(
+  const amountInConverted = ethers.parseUnits(
     tradeAmountPLS.toString(),
     "ether"
   );
 
   // define services
-  const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
+  const provider = new ethers.JsonRpcProvider(RPC_URL);
   const signer = new ethers.Wallet(walletPrivateKey, provider);
-  const abiCoder = new ethers.utils.AbiCoder();
+  const abiCoder = new ethers.AbiCoder();
 
   // Instantiate contracts with the provided ABI and signer.
   const routerContract = new ethers.Contract(
@@ -34,12 +34,12 @@ async function main() {
   );
 
   // ensure that everything has been set up correctly:
-  console.log('\n Chain connection check')
-  console.log('- signer connected: ', signer._isSigner)
-  console.log('- signer address: ', signer.address)
-  console.log('- provider connected: ', signer.provider._isProvider)
-  console.log('- routerContract set up: ', routerContract.address)
-  console.log('\n Swap params for `multicall` method')
+  console.log("\n Chain connection check");
+  console.log("- signer connected: ", signer._isSigner);
+  console.log("- signer address: ", signer.address);
+  console.log("- provider connected: ", signer.provider._isProvider);
+  console.log("- routerContract set up: ", routerContract.address);
+  console.log("\n Swap params for `multicall` method");
 
   // prepare data for tokens swap
   const deadline = (Date.now() / 1000 + 60 * 20).toFixed(0); // swap tx deadline in 20 mins after calling the function (same as on 9mm swap tool)
@@ -68,7 +68,7 @@ async function main() {
   const minOutAmount = abiCoder
     .encode(
       ["uint256"],
-      [ethers.utils.parseUnits((tradeAmountPLS * 0.88).toString(), "ether")]
+      [ethers.parseUnits((tradeAmountPLS * 0.88).toString(), "ether")]
     )
     .substring(2); // for now this value is defined based on the tradeAmountPLS off chain, but in the future it should be checked whether 9mm has a specific method in the contract to fetch this info
 
