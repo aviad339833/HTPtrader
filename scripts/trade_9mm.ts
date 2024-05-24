@@ -3,9 +3,76 @@ import router_ABI from "../abis/v3_9mm_smartRouter.json";
 import { ethers } from "ethers";
 require("dotenv").config();
 
-async function main() {
+// Global counters
+let totalPLSSpent = 0;
+let tradeCount = 0;
+let nextTradeDelay = getRandomDelay();
+
+// Function to get a random trade amount based on specified probabilities.
+function getRandomTradeAmount() {
+  const rand = Math.random();
+  if (rand < 0.4) {
+    return Math.floor(Math.random() * 101) + 100; // 100-200
+  } else if (rand < 0.7) {
+    return Math.floor(Math.random() * 301) + 200; // 200-500
+  } else if (rand < 0.9) {
+    return Math.floor(Math.random() * 301) + 500; // 500-800
+  } else {
+    return Math.floor(Math.random() * 201) + 800; // 800-1000
+  }
+}
+
+// Function to get a random private key from the list.
+function getRandomPrivateKey() {
+  const keys = [
+    process.env.WALLET_PK_1,
+    process.env.WALLET_PK_2,
+    process.env.WALLET_PK_3,
+    process.env.WALLET_PK_4,
+    process.env.WALLET_PK_5,
+    process.env.WALLET_PK_6,
+    process.env.WALLET_PK_7,
+    process.env.WALLET_PK_8,
+    process.env.WALLET_PK_9,
+    process.env.WALLET_PK_10,
+  ];
+  const randomIndex = Math.floor(Math.random() * keys.length);
+  return keys[randomIndex];
+}
+
+// Function to get a random delay between 5 to 15 minutes
+function getRandomDelay() {
+  return (Math.floor(Math.random() * 11) + 5) * 60 * 1000; // in milliseconds
+}
+
+// Function to update and display the countdown timer
+function startCountdown() {
+  let timeRemaining = nextTradeDelay / 1000;
+
+  const intervalId = setInterval(() => {
+    console.clear();
+    console.log(
+      `Next trade in: ${Math.floor(timeRemaining / 60)} minutes ${
+        timeRemaining % 60
+      } seconds`
+    );
+    console.log(
+      `Total PLS spent: ${totalPLSSpent} | Total trades: ${tradeCount}`
+    );
+    timeRemaining--;
+
+    if (timeRemaining < 0) {
+      clearInterval(intervalId);
+      executeTrade().catch((error) => {
+        console.error("Error in execution:", error);
+      });
+    }
+  }, 1000);
+}
+
+// Function to execute a trade
+async function executeTrade() {
   // constants
-  const walletPrivateKey = process.env.WALLET_PK_MASTER!;
   const RPC_URL = process.env.LIVE_RPC;
   const IN_TOKEN_ADDRESS = "0xA1077a294dDE1B09bB078844df40758a5D0f9a27"; // Address of WPLS token contract.
   const OUT_TOKEN_ADDRESS = "0x7c7ba94b60270bc2c7d98d3498b5ce85b870a749"; // Address of the HTP token
@@ -13,7 +80,11 @@ async function main() {
 
   const poolSlippageTolerance = 500n; // if needed, change according to the selected IN_TOKEN_ADDRESS and OUT_TOKEN_ADDRESS addresses.
 
-  const tradeAmountPLS = 80; // Define the amount of PLS you want to swap.
+  // Random trade amount in PLS
+  const tradeAmountPLS = getRandomTradeAmount();
+
+  // Random private key
+  const walletPrivateKey = getRandomPrivateKey();
 
   // convert tradeAmountPLS to BigNumber
   const amountInConverted = ethers.parseUnits(
@@ -88,16 +159,41 @@ async function main() {
 
   console.log("\n Execute the swap");
   // Execute the swap
-  const txRes = await routerContract.multicall(deadline, swapDetailsinBytes, {
-    gasLimit: 5000000,
-    value: amountInConverted,
-  });
+  try {
+    const txRes = await routerContract.multicall(deadline, swapDetailsinBytes, {
+      gasLimit: 5000000,
+      value: amountInConverted,
+    });
 
-  console.log(`- Transaction hash: ${txRes.hash}`);
-  await txRes.wait();
-  console.log("\nTransaction confirmed!");
+    console.log(`- Transaction hash: ${txRes.hash}`);
+    await txRes.wait();
+    console.log("\nTransaction confirmed!");
+    console.log(`Wallet: ${signer.address} | Amount: ${tradeAmountPLS} PLS`);
+
+    // Log the wallet and trade amount
+    console.log(
+      `Executed trade from wallet: ${signer.address}, amount: ${tradeAmountPLS} PLS`
+    );
+
+    // Update counters
+    totalPLSSpent += tradeAmountPLS;
+    tradeCount += 1;
+
+    // Log total PLS spent and trade count
+    console.log(
+      `Total PLS spent: ${totalPLSSpent} | Total trades: ${tradeCount}`
+    );
+  } catch (error) {
+    console.error("Error executing trade:", error);
+  }
+
+  // Schedule the next trade
+  nextTradeDelay = getRandomDelay();
+  console.log(`Next trade in: ${nextTradeDelay / 60000} minutes`);
+  startCountdown();
 }
 
-main().catch((error) => {
-  console.error("Error in main execution:", error);
+// Start the bot by executing the first trade and then starting the countdown
+executeTrade().catch((error) => {
+  console.error("Error in initial execution:", error);
 });
